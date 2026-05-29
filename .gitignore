@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+frontend/node_modules/
+struggle_annotator/frontend/build/
+.venv/
+venv/
+.env
