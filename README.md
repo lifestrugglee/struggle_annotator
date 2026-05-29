@@ -1,6 +1,3 @@
-# struggle_annotator
-A simple annotation tool
-
 # Struggle Annotator
 
 A Streamlit custom component for interactive text annotation, useful for NER-style labeling tasks. The Python wrapper is published as `struggle_annotator`; the frontend is built with TypeScript and React per the standard Streamlit Components pattern.
