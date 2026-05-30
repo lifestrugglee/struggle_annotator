@@ -7,7 +7,7 @@ name = "struggle-annotator"
 version = "0.2.3"
 description = "Streamlit custom component for interactive NER-style text annotation"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 dependencies = ["streamlit>=1.28"]
 
