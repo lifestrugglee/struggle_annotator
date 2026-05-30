@@ -1,6 +1,6 @@
 {
   "name": "struggle-annotator-frontend",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -17,6 +17,6 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
     "typescript": "^5.5.0",
-    "vite": "^8.0.14"
+    "vite": "^7.0.0"
   }
 }
