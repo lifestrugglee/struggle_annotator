@@ -37,15 +37,13 @@ function getDomCharOffset(
   targetNode: Node,
   offsetInNode: number
 ): number {
-  let total = 0
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
-  while (walker.nextNode()) {
-    const node = walker.currentNode
-    if (node === targetNode) return total + offsetInNode
-    total += node.textContent?.length ?? 0
-  }
-  // Fallback — shouldn't happen with well-formed renders
-  return total + offsetInNode
+  // Range.toString() handles both text-node offsets (character index) and
+  // element-node offsets (child index) natively, so it works correctly even
+  // when the browser places selection endpoints adjacent to inline-block spans.
+  const range = document.createRange()
+  range.setStart(container, 0)
+  range.setEnd(targetNode, offsetInNode)
+  return range.toString().length
 }
 
 function hasOverlap(start: number, end: number, labelDict: LabelDict): boolean {
@@ -132,6 +130,9 @@ function AnnotatorComponent({ args }: ComponentProps) {
   })
 
   const [activeLabel, setActiveLabel] = useState<string | null>(null)
+  const [wordExpand, setWordExpand] = useState(true)
+  const [labelPosition, setLabelPosition] = useState<"left" | "top" | "right">("top")
+  const [lineHeight, setLineHeight] = useState(1.9)
   const [status, setStatus] = useState("Select an entity, then highlight text.")
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -231,11 +232,13 @@ function AnnotatorComponent({ args }: ComponentProps) {
       }
 
       // Expand to full word boundaries when selection starts or ends mid-word.
-      if (/\w/.test(text[start])) {
-        while (start > 0 && /\w/.test(text[start - 1])) start--
-      }
-      if (end > 0 && /\w/.test(text[end - 1])) {
-        while (end < text.length && /\w/.test(text[end])) end++
+      if (wordExpand) {
+        if (/\w/.test(text[start])) {
+          while (start > 0 && /\w/.test(text[start - 1])) start--
+        }
+        if (end > 0 && /\w/.test(text[end - 1])) {
+          while (end < text.length && /\w/.test(text[end])) end++
+        }
       }
 
       // Reject overlapping spans.
@@ -250,7 +253,54 @@ function AnnotatorComponent({ args }: ComponentProps) {
       setStatus(`"${value}" → ${activeLabel}`)
       selection.removeAllRanges()
     },
-    [activeLabel, labelDict, text, addAnnotation, removeAnnotation]
+    [activeLabel, wordExpand, labelDict, text, addAnnotation, removeAnnotation]
+  )
+
+  // ------------------------------------------------------------------
+  // Render helpers
+  // ------------------------------------------------------------------
+
+  const Toggle = ({ checked, onToggle, label }: { checked: boolean; onToggle: () => void; label: string }) => (
+    <label
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        cursor: "pointer",
+        fontSize: "13px",
+        color: "#444",
+        userSelect: "none",
+      }}
+    >
+      <span
+        onClick={onToggle}
+        style={{
+          position: "relative",
+          display: "inline-block",
+          width: "36px",
+          height: "20px",
+          borderRadius: "10px",
+          background: checked ? "#1E88E5" : "#ccc",
+          transition: "background 0.2s",
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            top: "2px",
+            left: checked ? "18px" : "2px",
+            width: "16px",
+            height: "16px",
+            borderRadius: "50%",
+            background: "#fff",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+            transition: "left 0.2s",
+          }}
+        />
+      </span>
+      {label}
+    </label>
   )
 
   // ------------------------------------------------------------------
@@ -259,76 +309,158 @@ function AnnotatorComponent({ args }: ComponentProps) {
 
   const segments = buildSegments(text, labelDict)
 
-  return (
-    <div style={{ fontFamily: "sans-serif", padding: "8px 12px" }}>
-      {/* Entity legend */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
-        {Object.entries(labelDict).map(([label, { color }]) => {
-          const isActive = activeLabel === label
-          return (
-            <button
-              key={label}
-              onClick={() => setActiveLabel(isActive ? null : label)}
-              style={{
-                background: color,
-                color: "#fff",
-                border: isActive ? "2px solid #000" : "2px solid transparent",
-                borderRadius: "4px",
-                padding: "4px 12px",
-                cursor: "pointer",
-                fontWeight: isActive ? "bold" : "normal",
-                transform: isActive ? "scale(1.05)" : "scale(1)",
-                transition: "transform 0.1s, border-color 0.1s",
-                textShadow: "0 1px 2px rgba(0,0,0,0.4)",
-              }}
-            >
-              {label}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Annotatable text area */}
-      <div
-        ref={containerRef}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
+  const entityButtons = Object.entries(labelDict).map(([label, { color }]) => {
+    const isActive = activeLabel === label
+    return (
+      <button
+        key={label}
+        onClick={() => setActiveLabel(isActive ? null : label)}
         style={{
-          whiteSpace: "pre-wrap",
-          lineHeight: "1.9",
-          fontSize: "14px",
-          border: "1px solid #ddd",
+          background: color,
+          color: "#fff",
+          border: isActive ? "2px solid #000" : "2px solid transparent",
           borderRadius: "4px",
-          padding: "12px",
-          cursor: "text",
-          userSelect: "text",
+          padding: "4px 12px",
+          cursor: "pointer",
+          fontWeight: isActive ? "bold" : "normal",
+          transform: isActive ? "scale(1.05)" : "scale(1)",
+          transition: "transform 0.1s, border-color 0.1s",
+          textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+          whiteSpace: "nowrap",
         }}
       >
-        {segments.map((seg, i) =>
-          seg.kind === "annotated" ? (
-            <span
-              key={i}
-              data-start={seg.start}
-              data-end={seg.end}
-              data-label={seg.label}
-              data-ann-idx={seg.annIdx}
-              title={`${seg.label} — click to remove`}
-              style={{
-                backgroundColor: seg.color,
-                borderRadius: "3px",
-                padding: "1px 3px",
-                cursor: "pointer",
-                color: "#fff",
-                textShadow: "0 1px 2px rgba(0,0,0,0.35)",
-              }}
-            >
-              {seg.text}
-            </span>
-          ) : (
-            <span key={i} data-start={seg.start} data-end={seg.end}>
-              {seg.text}
-            </span>
-          )
+        {label}
+      </button>
+    )
+  })
+
+  return (
+    <div style={{ fontFamily: "sans-serif", padding: "8px 12px" }}>
+      <style>{`
+        span[data-ann-idx]::after {
+          content: attr(data-label);
+          position: absolute;
+          bottom: 1px;
+          left: 0;
+          right: 0;
+          text-align: center;
+          font-size: 10px;
+          line-height: 1;
+          opacity: 0.8;
+          pointer-events: none;
+          white-space: nowrap;
+          overflow: hidden;
+        }
+      `}</style>
+      {/* Toolbar */}
+      <div style={{ display: "flex", gap: "20px", alignItems: "center", marginBottom: "10px" }}>
+        <Toggle checked={wordExpand} onToggle={() => setWordExpand((v) => !v)} label="Auto-expand to full word" />
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#444" }}>
+          Spacing
+          <input
+            type="range"
+            min={1.2}
+            max={5.0}
+            step={0.1}
+            value={lineHeight}
+            onChange={(e) => setLineHeight(parseFloat(e.target.value))}
+            style={{ width: "140px", cursor: "pointer", accentColor: "#1E88E5" }}
+          />
+        </div>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#444" }}>
+          Labels
+          <div style={{ display: "inline-flex", border: "1px solid #ccc", borderRadius: "4px", overflow: "hidden" }}>
+            {(["left", "top", "right"] as const).map((pos, i, arr) => (
+              <button
+                key={pos}
+                onClick={() => setLabelPosition(pos)}
+                style={{
+                  padding: "3px 10px",
+                  fontSize: "12px",
+                  background: labelPosition === pos ? "#1E88E5" : "#fff",
+                  color: labelPosition === pos ? "#fff" : "#444",
+                  border: "none",
+                  borderRight: i < arr.length - 1 ? "1px solid #ccc" : "none",
+                  cursor: "pointer",
+                  transition: "background 0.15s, color 0.15s",
+                }}
+              >
+                {pos.charAt(0).toUpperCase() + pos.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Legend above text */}
+      {labelPosition === "top" && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+          {entityButtons}
+        </div>
+      )}
+
+      {/* Main body */}
+      <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+        {/* Legend on left */}
+        {labelPosition === "left" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", flexShrink: 0 }}>
+            {entityButtons}
+          </div>
+        )}
+
+        {/* Annotatable text area */}
+        <div
+          ref={containerRef}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          style={{
+            flex: 1,
+            whiteSpace: "pre-wrap",
+            lineHeight,
+            fontSize: "14px",
+            border: "1px solid #ddd",
+            borderRadius: "4px",
+            padding: "12px",
+            cursor: "text",
+            userSelect: "text",
+          }}
+        >
+          {segments.map((seg, i) =>
+            seg.kind === "annotated" ? (
+              <span
+                key={i}
+                data-start={seg.start}
+                data-end={seg.end}
+                data-label={seg.label}
+                data-ann-idx={seg.annIdx}
+                title={`${seg.label} — click to remove`}
+                style={{
+                  display: "inline-block",
+                  position: "relative",
+                  backgroundColor: seg.color,
+                  borderRadius: "3px",
+                  padding: "0 3px",
+                  lineHeight: "3em",
+                  cursor: "pointer",
+                  color: "#fff",
+                  textShadow: "0 1px 2px rgba(0,0,0,0.35)",
+                }}
+              >
+                {seg.text}
+              </span>
+            ) : (
+              <span key={i} data-start={seg.start} data-end={seg.end}>
+                {seg.text}
+              </span>
+            )
+          )}
+        </div>
+
+        {/* Legend on right */}
+        {labelPosition === "right" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", flexShrink: 0 }}>
+            {entityButtons}
+          </div>
         )}
       </div>
 
