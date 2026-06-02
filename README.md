@@ -1,6 +1,4 @@
-# [Struggle Annotator](https://struggle-annotator.streamlit.app/)
-
-[![Streamlit](./assets/streamlit-logo.svg)](https://streamlit.io)
+# [Struggle Annotator](https://struggle-annotator.streamlit.app/) [![Streamlit](https://streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.svg)](https://streamlit.io)
 
 
 A Streamlit custom component for interactive text annotation, useful for NER-style labeling tasks. The Python wrapper is published as `struggle_annotator`; the frontend is built with TypeScript and React per the standard Streamlit Components pattern.
