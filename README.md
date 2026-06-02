@@ -1,4 +1,4 @@
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](YOUR_APP_URL)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://struggle-annotator.streamlit.app/)
 # [Struggle Annotator](https://struggle-annotator.streamlit.app/)
 
 <a href="https://streamlit.io">
