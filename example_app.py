@@ -19,24 +19,11 @@ text = (
 )
 
 label_dict = {
-    "Names": {"color": "#FE4545"},
-    "Geographic subdivisions": {"color": "#008000"},
-    "Dates": {"color": "#FFA500"},
-    "Telephone numbers": {"color": "#4F4FFF"},
-    "Fax numbers": {"color": "#33D0D0"},
-    "Email addresses": {"color": "#FF00FF"},
-    "Social Security numbers": {"color": "#800080"},
-    "Medical record numbers": {"color": "#A65353"},
-    "Health plan beneficiary numbers": {"color": "#FF889C"},
-    "Account numbers": {"color": "#C4A600"},
-    "Certificate/license numbers": {"color": "#008080"},
-    "Vehicle identifiers": {"color": "#353590"},
-    "Device identifiers": {"color": "#76D076"},
-    "Web URLs": {"color": "#800000"},
-    "IP addresses": {"color": "#8E8E3A"},
-    # "Biometric identifiers": {"color": "#FF7F50"},
-    # "Full-face photographs": {"color": "#808080"},
-    "Other unique identifying numbers": {"color": "#8A8A8A"},
+    "Personal names": {"color": "#FE4545"},
+    "Organizations": {"color": "#008000"},
+    "Locations": {"color": "#FFA500"},
+    "Time": {"color": "#4F4FFF"},
+    "Money": {"color": "#33D0D0"},
 }
 
 st.title("Struggle Annotator")

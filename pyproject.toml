@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "struggle-annotator"
-version = "0.3.1"
+version = "0.3.2"
 description = "Streamlit custom component for interactive NER-style text annotation"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["streamlit>=1.28"]
 
 [project.optional-dependencies]
