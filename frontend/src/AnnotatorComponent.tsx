@@ -21,6 +21,9 @@ type LabelDict = Record<string, LabelConfig>
 interface Args {
   text: string
   label_dict: LabelDict
+  spacing: number
+  label_position: "left" | "top" | "right"
+  auto_expand: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +122,7 @@ function buildSegments(text: string, labelDict: LabelDict): Segment[] {
 // ---------------------------------------------------------------------------
 
 function AnnotatorComponent({ args }: ComponentProps) {
-  const { text, label_dict } = args as Args
+  const { text, label_dict, spacing, label_position, auto_expand } = args as Args
 
   const [labelDict, setLabelDict] = useState<LabelDict>(() => {
     const init: LabelDict = {}
@@ -130,9 +133,9 @@ function AnnotatorComponent({ args }: ComponentProps) {
   })
 
   const [activeLabel, setActiveLabel] = useState<string | null>(null)
-  const [wordExpand, setWordExpand] = useState(true)
-  const [labelPosition, setLabelPosition] = useState<"left" | "top" | "right">("top")
-  const [lineHeight, setLineHeight] = useState(1.9)
+  const wordExpand = auto_expand ?? true
+  const labelPosition = label_position ?? "top"
+  const lineHeight = spacing ?? 1.9
   const [status, setStatus] = useState("Select an entity, then highlight text.")
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -260,49 +263,6 @@ function AnnotatorComponent({ args }: ComponentProps) {
   // Render helpers
   // ------------------------------------------------------------------
 
-  const Toggle = ({ checked, onToggle, label }: { checked: boolean; onToggle: () => void; label: string }) => (
-    <label
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "8px",
-        cursor: "pointer",
-        fontSize: "13px",
-        color: "#444",
-        userSelect: "none",
-      }}
-    >
-      <span
-        onClick={onToggle}
-        style={{
-          position: "relative",
-          display: "inline-block",
-          width: "36px",
-          height: "20px",
-          borderRadius: "10px",
-          background: checked ? "#1E88E5" : "#ccc",
-          transition: "background 0.2s",
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            position: "absolute",
-            top: "2px",
-            left: checked ? "18px" : "2px",
-            width: "16px",
-            height: "16px",
-            borderRadius: "50%",
-            background: "#fff",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-            transition: "left 0.2s",
-          }}
-        />
-      </span>
-      {label}
-    </label>
-  )
-
   // ------------------------------------------------------------------
   // Render
   // ------------------------------------------------------------------
@@ -352,45 +312,6 @@ function AnnotatorComponent({ args }: ComponentProps) {
           overflow: hidden;
         }
       `}</style>
-      {/* Toolbar */}
-      <div style={{ display: "flex", gap: "20px", alignItems: "center", marginBottom: "10px" }}>
-        <Toggle checked={wordExpand} onToggle={() => setWordExpand((v) => !v)} label="Auto-expand to full word" />
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#444" }}>
-          Spacing
-          <input
-            type="range"
-            min={1.2}
-            max={5.0}
-            step={0.1}
-            value={lineHeight}
-            onChange={(e) => setLineHeight(parseFloat(e.target.value))}
-            style={{ width: "140px", cursor: "pointer", accentColor: "#1E88E5" }}
-          />
-        </div>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#444" }}>
-          Labels
-          <div style={{ display: "inline-flex", border: "1px solid #ccc", borderRadius: "4px", overflow: "hidden" }}>
-            {(["left", "top", "right"] as const).map((pos, i, arr) => (
-              <button
-                key={pos}
-                onClick={() => setLabelPosition(pos)}
-                style={{
-                  padding: "3px 10px",
-                  fontSize: "12px",
-                  background: labelPosition === pos ? "#1E88E5" : "#fff",
-                  color: labelPosition === pos ? "#fff" : "#444",
-                  border: "none",
-                  borderRight: i < arr.length - 1 ? "1px solid #ccc" : "none",
-                  cursor: "pointer",
-                  transition: "background 0.15s, color 0.15s",
-                }}
-              >
-                {pos.charAt(0).toUpperCase() + pos.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* Legend above text */}
       {labelPosition === "top" && (
@@ -423,6 +344,8 @@ function AnnotatorComponent({ args }: ComponentProps) {
             padding: "12px",
             cursor: "text",
             userSelect: "text",
+            maxHeight: "400px",
+            overflowY: "auto",
           }}
         >
           {segments.map((seg, i) =>
